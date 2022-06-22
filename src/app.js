@@ -11,7 +11,7 @@ app.use('/pastes/:pasteId', (req, res, next) => {
   if (foundPaste) {
     res.json({ data: foundPaste });
   } else {
-    next(`Paste id not found: ${pasteId}`);
+    next({ status: 404, message: `Paste id not found: ${pasteId}` });
   }
 });
 
@@ -23,11 +23,24 @@ app.get('/pastes', (req, res) => {
 //post pastes handler
 // Variable to hold the next ID
 // Because some IDs may already be used, find the largest assigned ID
+function bodyHasTextProperty(req, res, next) {
+  const { data: { text } = {} } = req.body;
+  if (text) {
+    return next();
+  }
+  next({
+    status: 400,
+    message: "A 'text' property is required.",
+  });
+};
+
 let lastPasteId = pastes.reduce((maxId, paste) => Math.max(maxId, paste.id), 0);
 
-app.post("/pastes", (req, res, next) => {
+app.post(
+  "/pastes",
+  bodyHasTextProperty,
+  (req, res) => {
   const { data: { name, syntax, exposure, expiration, text, user_id } = {} } = req.body;
-  if (text) {
     const newPaste = {
       id: ++lastPasteId, // Increment last ID, then assign as the current ID
       name,
@@ -39,10 +52,8 @@ app.post("/pastes", (req, res, next) => {
     };
     pastes.push(newPaste);
     res.status(201).json({ data: newPaste });
-  } else {
-    res.sendStatus(400);
-  };
- });
+  }
+);
 
 // Not found handler
 app.use((req, res, next) => {
@@ -52,7 +63,8 @@ app.use((req, res, next) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err);
-  res.send(err);
+  const { status = 500, message = 'Something went wrong!' } = err;
+  res.status(status).json({ error: message });
 });
 
 module.exports = app;
