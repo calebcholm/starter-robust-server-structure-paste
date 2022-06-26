@@ -2,9 +2,11 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 const pastes = require('./data/pastes-data');
+const usersRouter = require('./users/users.router');
 const pastesRouter = require('./pastes/pastes.router');
 
-//use pastes router
+//router for users and pastes
+app.use('/users', usersRouter);
 app.use('/pastes', pastesRouter);
 
 // Not found handler
